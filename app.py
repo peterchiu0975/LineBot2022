@@ -1,28 +1,43 @@
-from flask import Flask
-app = Flask(__name__)
+import requests
+import sys
 
-from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import InvalidSignatureError
-from linebot.models import  MessageEvent, TextMessage, TextSendMessage
+ 
+class LineBotFunction:
 
-line_bot_api = LineBotApi('vfMoLhoxu4IMBxil/iZeTRUTsjgX21sQPuWKTjt9+0zik+nychozMwKyalCjNk6R6PvgHMPc/QW7vhaNIdlsYgSPnFmv5fwHkDntd/YRdXGElm8EJvXgjxbEUhok+L0hr+BDU0mpUa9G+euf6VfcXAdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('58f13b495ee1ccf72ea6f99409a5a4d0')
-line_bot_api.push_message('Ud9f868bfb17736f037645b7a8404c429', TextSendMessage(text='包裹到了'))
+    def __init__(self, push_str, webhook_url):
+        self.push_str = push_str
+        self.webhook_url = webhook_url
 
-@app.route("/callback", methods=['POST'])
-def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
+    def push_message(self):
+        """
+        取得 self.push_str 參數值來做判斷
+        如果是None 則不發送請求
+        如果有字串的話，會針對Line Bot 的 Webhook URL發送請求
+        並印出輸入的字串
+        """
+
+        if self.push_str is None:
+            print("未輸入字串，不發送請求")
+            print("使用方式：請在 python3 ~/LineBotPushMessage.py 空一個輸入參數，記得要加上雙引號")
+            print("範例： python3 LineBotPushMessage.py \"how are you\"")
+        else:
+            requests.get(self.webhook_url + self.push_str)
+            print(self.webhook_url + self.push_str)
+
+
+if __name__ == "__main__":
+    """
+    程式碼會從這裡開始跑
+    在執行程式碼時，請執行 python3 LineBotPushMessage.py "how are you"
+    "how are you" 代表的是Line Bot 會收到什麼字串
+    """
+
+    Webhook_URL ="https://linebot20220321.herokuapp.com/push_message" # 請先修改你的Webhook URL，否則你無法發送請求
+
     try:
-        handler.handle(body,signature)
-    except InvalidSignatureError:
-        abort(400)
-    return 'OK'
+        push_str = sys.argv[1]  # 這串代表的是 它會取得 你執行檔案後面 下一個字串
+    except Exception:
+        push_str = None  # 當如果沒有輸入會等於None 因此在執行時，不會去請求
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=event.message.text))
-
-if __name__ == '__main__':
-    app.run()
+    LineBot = LineBotFunction(push_str, Webhook_URL)  # 取得到的push_str與 Webhook_RUL 會給 LineBotFunction class
+    LineBot.push_message()  # 執行 LineBotFunction內的 push_message function
